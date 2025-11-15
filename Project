@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jyoti Gupta's Web Calculator</title>
+    <!-- Using Inter font for a clean, modern look -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom CSS for Calculator Grid and Appearance */
+        .calculator-container {
+            max-width: 360px;
+            margin: 50px auto;
+            border-radius: 1.5rem;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
+            background-color: #2D3748; /* Darker background */
+            padding: 1.5rem;
+            border: 1px solid #4A5568;
+        }
+
+        #display {
+            background-color: #1A202C; /* Very dark display */
+            color: #48BB78; /* Green text for a tech feel */
+            min-height: 80px;
+            padding: 1rem;
+            text-align: right;
+            font-size: 2.5rem;
+            overflow-x: auto;
+            white-space: nowrap;
+            border-radius: 0.75rem;
+            margin-bottom: 1rem;
+            font-family: 'Inter', sans-serif;
+            font-weight: 300;
+            letter-spacing: 1px;
+        }
+
+        .buttons-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.75rem;
+        }
+
+        .calc-button {
+            padding: 1rem;
+            font-size: 1.5rem;
+            font-weight: 600;
+            border-radius: 9999px; /* Fully rounded buttons */
+            cursor: pointer;
+            transition: all 0.15s ease-in-out;
+            outline: none;
+            border: none;
+            user-select: none;
+            box-shadow: 0 4px #1A202C; /* Internal shadow for 3D effect */
+        }
+
+        /* Number/Function Buttons */
+        .number-btn, .function-btn {
+            background-color: #4A5568; /* Slightly lighter gray */
+            color: white;
+        }
+        .number-btn:active, .function-btn:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px #1A202C;
+        }
+
+        /* Operator Buttons */
+        .operator-btn {
+            background-color: #48BB78; /* Teal/Green accent */
+            color: #1A202C;
+        }
+        .operator-btn:active {
+            background-color: #38A169;
+            transform: translateY(2px);
+            box-shadow: 0 2px #1A202C;
+        }
+
+        /* Clear/Reset Button */
+        .clear-btn {
+            background-color: #F56565; /* Red for destructive action */
+            color: #1A202C;
+        }
+        .clear-btn:active {
+            background-color: #E53E3E;
+            transform: translateY(2px);
+            box-shadow: 0 2px #1A202C;
+        }
+
+        /* Zero button spans two columns */
+        .span-2 {
+            grid-column: span 2;
+            border-radius: 9999px;
+            text-align: left;
+            padding-left: 1.5rem;
+        }
+    </style>
+</head>
+<body class="bg-gray-800 flex items-center justify-center min-h-screen">
+
+    <div class="calculator-container">
+        <h1 class="text-xl font-bold text-center text-gray-100 mb-6">Web Calculator</h1>
+        
+        <!-- Display Screen -->
+        <div id="display" class="font-mono">0</div>
+
+        <!-- Buttons Grid -->
+        <div class="buttons-grid">
+            <!-- First Row -->
+            <button class="calc-button clear-btn" onclick="clearDisplay()">AC</button>
+            <button class="calc-button function-btn" onclick="appendInput('backspace')"><i class="fas fa-backspace"></i></button>
+            <button class="calc-button function-btn" onclick="appendInput('%')">%</button>
+            <button class="calc-button operator-btn" onclick="appendInput('/')">/</button>
+
+            <!-- Second Row -->
+            <button class="calc-button number-btn" onclick="appendInput('7')">7</button>
+            <button class="calc-button number-btn" onclick="appendInput('8')">8</button>
+            <button class="calc-button number-btn" onclick="appendInput('9')">9</button>
+            <button class="calc-button operator-btn" onclick="appendInput('')"></button>
+
+            <!-- Third Row -->
+            <button class="calc-button number-btn" onclick="appendInput('4')">4</button>
+            <button class="calc-button number-btn" onclick="appendInput('5')">5</button>
+            <button class="calc-button number-btn" onclick="appendInput('6')">6</button>
+            <button class="calc-button operator-btn" onclick="appendInput('-')">-</button>
+
+            <!-- Fourth Row -->
+            <button class="calc-button number-btn" onclick="appendInput('1')">1</button>
+            <button class="calc-button number-btn" onclick="appendInput('2')">2</button>
+            <button class="calc-button number-btn" onclick="appendInput('3')">3</button>
+            <button class="calc-button operator-btn" onclick="appendInput('+')">+</button>
+
+            <!-- Fifth Row -->
+            <button class="calc-button number-btn span-2" onclick="appendInput('0')">0</button>
+            <button class="calc-button number-btn" onclick="appendInput('.')">.</button>
+            <button class="calc-button operator-btn" onclick="calculateResult()">=</button>
+        </div>
+    </div>
+
+    <!-- Custom Modal for Errors (Replaces alert()) -->
+    <div id="error-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center">
+        <div class="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full">
+            <h3 class="text-xl font-bold text-red-600 mb-4">Calculation Error</h3>
+            <p id="error-message" class="text-gray-700 mb-6"></p>
+            <button class="w-full bg-red-600 text-white py-2 rounded hover:bg-red-700" onclick="hideErrorModal()">Close</button>
+        </div>
+    </div>
+
+
+    <script>
+        const display = document.getElementById('display');
+        let currentInput = '';
+        let resultCalculated = false;
+
+        // Utility function to show custom error message
+        function showErrorModal(message) {
+            document.getElementById('error-message').textContent = message;
+            document.getElementById('error-modal').classList.remove('hidden');
+            document.getElementById('error-modal').classList.add('flex');
+            clearDisplay(); // Clear display on error
+        }
+
+        function hideErrorModal() {
+            document.getElementById('error-modal').classList.remove('flex');
+            document.getElementById('error-modal').classList.add('hidden');
+        }
+
+        // Handles user input (numbers, operators, functions)
+        function appendInput(value) {
+            if (value === 'backspace') {
+                if (currentInput.length > 0 && !resultCalculated) {
+                    currentInput = currentInput.slice(0, -1);
+                } else if (resultCalculated) {
+                    currentInput = String(currentInput).slice(0, -1);
+                    resultCalculated = false;
+                }
+            } else if (['+', '-', '*', '/'].includes(value)) {
+                // Prevent starting with an operator or multiple operators in a row
+                const lastChar = currentInput.slice(-1);
+                if (currentInput === '' && value !== '-') return;
+                if (['+', '-', '*', '/', '%', '.'].includes(lastChar)) {
+                    // Replace existing operator
+                    currentInput = currentInput.slice(0, -1) + value;
+                } else {
+                    currentInput += value;
+                }
+                resultCalculated = false;
+            } else if (value === '.') {
+                // Simple dot logic: ensure no operator immediately precedes, and check for current number segment
+                const segment = currentInput.split(/[\+\-\*\/%]/).pop();
+                if (segment && !segment.includes('.')) {
+                    currentInput += value;
+                } else if (currentInput === '') {
+                    currentInput = '0.';
+                }
+            } else if (value === '%') {
+                 const lastChar = currentInput.slice(-1);
+                 if (['+', '-', '*', '/', '%', '.'].includes(lastChar) || currentInput === '') return;
+                 currentInput += value;
+            } else {
+                if (resultCalculated) {
+                    // Start new calculation if a number is pressed after an equals sign
+                    currentInput = value;
+                    resultCalculated = false;
+                } else {
+                    currentInput += value;
+                }
+            }
+            updateDisplay();
+        }
+
+        // Clears all input
+        function clearDisplay() {
+            currentInput = '';
+            resultCalculated = false;
+            updateDisplay();
+        }
+
+        // Updates the HTML display element
+        function updateDisplay() {
+            display.textContent = currentInput === '' ? '0' : currentInput;
+        }
+
+        // Calculates the result of the expression
+        function calculateResult() {
+            if (currentInput === '') {
+                return;
+            }
+
+            try {
+                // Replace % with /100 for evaluation
+                let finalExpression = currentInput.replace(/%/g, '/100');
+                
+                // Use a safe evaluation method
+                const result = new Function('return ' + finalExpression)();
+
+                if (isFinite(result)) {
+                    // Limit float precision and convert to string
+                    currentInput = String(parseFloat(result.toFixed(10)));
+                    resultCalculated = true;
+                } else {
+                    throw new Error("Invalid expression.");
+                }
+
+            } catch (error) {
+                showErrorModal("Error: Invalid input or mathematical operation.");
+            }
+
+            updateDisplay();
+        }
+
+        // Initialize display
+        window.onload = updateDisplay;
+    </script>
+</body>
+</html>
